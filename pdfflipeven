@@ -1,0 +1,23 @@
+#!/bin/bash
+
+[ -z "$1" -o -z "$2" -o "$1" == "--help" ] && {
+    echo "$0: flip even pages of a a PDF"
+    echo "usage: $0 <infile.pdf> <outfile.pdf>"
+    echo
+    echo "This program requires pdfinfo from poppler-utils and pdf-stapler."
+    exit 64
+}
+
+set -e
+set -o pipefail
+numpages=$(LANG=C LC_ALL=C pdfinfo "$1" | grep ^Pages: | awk ' { print $2 } ')
+pagedirectives=
+for page in `seq 1 $numpages`
+do
+    [ $((page%2)) -eq 0 ] && \
+        pagedirectives="$pagedirectives ${page}D" || \
+        pagedirectives="$pagedirectives ${page}"
+done
+
+rm -f "$2"
+pdf-stapler cat "$1" $pagedirectives "$2"
